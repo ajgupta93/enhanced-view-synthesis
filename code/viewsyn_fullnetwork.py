@@ -95,7 +95,7 @@ def build_full_network():
 	view_encoder = build_viewpoint_encoder()
 
 	decoder = build_common_decoder()
-	decoder = output_layer_decoder(decoder, 3)
+	decoder = output_layer_decoder(decoder, 5)
 
 	mask_decoder = build_common_decoder()
 	mask_decoder = output_layer_decoder(mask_decoder, 1)
@@ -139,8 +139,13 @@ def train_full_network(network, input_images, view_transformation, output_views)
 	callbacks_list = [hist, checkpoint]
 
 	
-	history = network.fit([input_images, view_transformation], [output_views, masked_views], batch_size=64, nb_epoch=100, verbose=1, callbacks=callbacks_list,
-		validation_split=0.2, validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0)
+	#history = network.fit([input_images, view_transformation], [output_views, masked_views], batch_size=64, nb_epoch=100, verbose=1, callbacks=callbacks_list,
+	#	validation_split=0.2, validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0)
+
+	train_data_dict, val_data_dict = generate_data_dictionary()
+
+	history = network.fit_generator(util.generate_data_from_list(train_data_dict), samples_per_epoch=64, nb_epoch=100, verbose=1, callbacks=callbacks_list,
+		 validation_data=util.generate_data_from_list(val_data_dict), nb_val_samples=16, class_weight=None, initial_epoch=0)
 
 	print hist.history
 	return hist
