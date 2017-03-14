@@ -1,5 +1,6 @@
 import numpy as np
 import viewsyn_model as model
+import viewsyn_fullnetwork as fnetwork
 
 def load_data():
 	train = np.load('../data/train_images_autoencoder.npy')
@@ -18,7 +19,13 @@ def run_autoencoder(train_images, test_images):
 	model.test_autoencoder(autoencoder, test_images)
 	
 
+def run_full_network():
+	full_network = fnetwork.build_full_network()
+
+
 if __name__ == '__main__':
 	train_images, test_images = load_data()
 
-	run_autoencoder(train_images, test_images)
+	#run_autoencoder(train_images, test_images)
+
+	run_full_network()
