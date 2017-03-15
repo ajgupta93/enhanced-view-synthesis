@@ -19,19 +19,19 @@ def show_image(image):
 
 def img_mask_gen(imgpath):
 	im = Image.open(imgpath).convert('L').point(lambda x: 0 if x<=0 or x>=250 else 255,'1')
-	return im	
+	return im
 
 def get_azimuth_transformation(in_path, out_path):
 	in_f = in_path.split('/')[-1]
 	out_f = out_path.split('/')[-1]
 
-	in_azimuth = int(in_f.split('_')[0])/20
-	out_azimuth = int(out_f.split('_')[0])/20
-	azimuth_bin = mod((in_azimuth-out_azimuth+18),19)
+	in_azimuth = int(in_f.split('_')[0]) / 20
+	out_azimuth = int(out_f.split('_')[0]) / 20
+	azimuth_bin = (in_azimuth - out_azimuth) % 19
+	
 	azimuth_onehot = np.zeros((1,19))
-	azimuth_onehot[azimuth_bin] = 1
-	if azimuth_onehot[18]==1:
-		print "Tinghui knows a different math\n"
+	azimuth_onehot[0][azimuth_bin] = 1
+	
 	return azimuth_onehot
 	
 def generate_data_from_list(data_dict):
@@ -52,7 +52,7 @@ def generate_data_from_list(data_dict):
 		in_img = np.asarray(Image.open(in_img_path).convert('RGB'), dtype=np.uint8)
 		out_img = np.asarray(Image.open(out_img_path).convert('RGB'), dtype=np.uint8)
 		
-		msk = imgMaskGen(out_img)
+		msk = img_mask_gen(out_img_path)
 
 		yield ({'image_input': np.asarray([in_img]), 'view_input': view_transformation}, 
 			{'sequential_3': np.asarray([out_img]), 'sequential_4': np.asarray([msk])})
