@@ -8,7 +8,9 @@ import pdb
 import shutil 
 import random
 
-def save_as_image(images):
+def save_as_image(filepath, images):
+	if not os.path.exists(filepath):
+		os.makedirs(filepath)
 	for i in range(0, len(images)):
 		filename = filepath+str(i)+".png"
 		imsave(filename, images[i])
@@ -23,18 +25,26 @@ def img_mask_gen(imgpath):
 
 def generate_autoencoder_data_from_list(dataArr):
 	while 1:
-		r = random.sample(range(len(dataArr)), 1)
-		fp = dataArr[r]	
-		currImgPath = fp[0]
-		img = np.asarray(Image.open(currImgPath).convert('RGB'), dtype=np.uint8)
-		#msk = imgMaskGen(currImgPath)
-		img4 = []
-		img4.append(img)
+		R = random.sample(range(len(dataArr)), 256)
+		img4 = []	
+		
+		try:
+			for r in R:	
+				fp = dataArr[r]	
+				currImgPath = fp
+				#print currImgPath
+				if '.png' in currImgPath:
+					img = np.asarray(Image.open(currImgPath).convert('RGB'), dtype=np.uint8)
+					#msk = imgMaskGen(currImgPath)
+					img4.append(img)
+		except:
+			continue
+
 		img4 = np.asarray(img4)
-		yield ({'convolution2d_input_1': img4}, {'reshape_3': img4})
+		yield {'convolution2d_input_1': img4}, {'reshape_3': img4}
 		#yield (img,img)
 
-def generate_data_array_for_autoencoder(dataPath='../data/chairs/'):
+def generate_data_array_for_autoencoder(dataPath='../data/train/'):
 	dataArr = []
 	for path,dirs,files in os.walk(dataPath):
 		#print path
