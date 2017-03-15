@@ -25,10 +25,14 @@ def get_azimuth_transformation(in_path, out_path):
 	in_f = in_path.split('/')[-1]
 	out_f = out_path.split('/')[-1]
 
-	in_azimuth = int(in_f.split('_')[0]) - 180
-	out_azimuth = int(out_f.split('_')[0]) - 180
-
-	return out_azimuth - in_azimuth
+	in_azimuth = int(in_f.split('_')[0])/20
+	out_azimuth = int(out_f.split('_')[0])/20
+	azimuth_bin = mod((in_azimuth-out_azimuth+18),19)
+	azimuth_onehot = np.zeros((1,19))
+	azimuth_onehot[azimuth_bin] = 1
+	if azimuth_onehot[18]==1:
+		print "Tinghui knows a different math\n"
+	return azimuth_onehot
 	
 def generate_data_from_list(data_dict):
 	while 1:
