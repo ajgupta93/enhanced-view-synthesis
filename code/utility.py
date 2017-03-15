@@ -52,7 +52,8 @@ def generate_data_from_list(data_dict):
 		in_img = np.asarray(Image.open(in_img_path).convert('RGB'), dtype=np.uint8)
 		out_img = np.asarray(Image.open(out_img_path).convert('RGB'), dtype=np.uint8)
 		
-		msk = img_mask_gen(out_img_path)
+		msk = np.reshape(np.asarray(img_mask_gen(out_img_path)), (224, 224, 1))
+
 
 		yield ({'image_input': np.asarray([in_img]), 'view_input': view_transformation}, 
 			{'sequential_3': np.asarray([out_img]), 'sequential_4': np.asarray([msk])})

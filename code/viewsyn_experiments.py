@@ -23,12 +23,14 @@ def run_autoencoder(train_images, test_images):
 def run_full_network():
 	full_network = fnetwork.build_full_network()
 
+	fnetwork.train_full_network(full_network)
+
 
 if __name__ == '__main__':
 	train_images, test_images = load_data()
 
 	#run_autoencoder(train_images, test_images)
 
-	#run_full_network()
+	run_full_network()
 
-	util.generate_data_dictionary()
+	#util.generate_data_dictionary()
