@@ -6,6 +6,8 @@ from keras.optimizers import *
 from keras.callbacks import *
 import utility as util
 import pdb
+import h5py
+import numpy as np
 
 def get_optimizer(name = 'adagrad', l_rate = 0.0001, dec = 0.0, b_1 = 0.9, b_2 = 0.999, mom = 0.5, rh = 0.9):
 	eps = 1e-8
@@ -78,7 +80,7 @@ def build_common_decoder():
 def output_layer_decoder(model, n_channel):
 	
 	#output layer, add 3 RGB channels for reconstructed output view
-	model.add(Deconvolution2D(n_channel, 3, 3, (None, 225, 225, 3), border_mode='same', subsample = (1,1), activation = 'relu'))
+	model.add(Deconvolution2D(n_channel, 3, 3, (None, 225, 225, n_channel), border_mode='same', subsample = (1,1), activation = 'relu'))
 
 	#add a resize layer to resize (225, 225) to (224, 224)
 	model.add(Reshape((225*225,n_channel)))
@@ -92,10 +94,10 @@ def output_layer_decoder(model, n_channel):
 
 def build_full_network():
 	image_encoder = build_image_encoder()
-	view_encoder = build_viewpoint_encoder()
 
 	decoder = build_common_decoder()
-	decoder = output_layer_decoder(decoder, 5)
+	decoder = output_layer_decoder(decoder, 3) #5
+	view_encoder = build_viewpoint_encoder()
 
 	mask_decoder = build_common_decoder()
 	mask_decoder = output_layer_decoder(mask_decoder, 1)
@@ -106,12 +108,14 @@ def build_full_network():
 	image_output = image_encoder(image_input)
 	view_output = view_encoder(view_input)
 
-	image_view_out = merge([image_output, view_output], mode='concat')
+	image_view_out = merge([image_output, view_output], mode='concat', concat_axis=1)
 
 	main_output = decoder(image_view_out)
 	mask_output = mask_decoder(image_view_out)
 
 	encoder_decoder = Model(input=[image_input, view_input], output=[main_output, mask_output])
+
+	# pdb.set_trace()
 
 	#merge outputs of these two networks
 	# image_view_encoder = Merge([image_encoder, view_encoder], mode='concat') 
@@ -122,14 +126,14 @@ def build_full_network():
 
 	opt = get_optimizer('adam')
 	encoder_decoder.compile(optimizer=opt, metrics=['accuracy'],
-		loss={'sequential_3': 'mean_squared_error', 'sequential_4': 'binary_crossentropy'},
-              loss_weights={'sequential_3': 1.0, 'sequential_4': 0.1})
+		loss={'sequential_2': 'mean_squared_error', 'sequential_4': 'binary_crossentropy'},
+              loss_weights={'sequential_2': 1.0, 'sequential_4': 0.1})
 
 	print encoder_decoder.summary()
 
 	return encoder_decoder
 
-def train_full_network(network, input_images, view_transformation, output_views):
+def train_full_network(network):
 
 	# note that we are passing a list of Numpy arrays as training data
 	# since the model has 2 inputs and 2 outputs
@@ -142,7 +146,7 @@ def train_full_network(network, input_images, view_transformation, output_views)
 	#history = network.fit([input_images, view_transformation], [output_views, masked_views], batch_size=64, nb_epoch=100, verbose=1, callbacks=callbacks_list,
 	#	validation_split=0.2, validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0)
 
-	train_data_dict, val_data_dict = generate_data_dictionary()
+	train_data_dict, val_data_dict = util.generate_data_dictionary()
 
 	history = network.fit_generator(util.generate_data_from_list(train_data_dict), samples_per_epoch=64, nb_epoch=100, verbose=1, callbacks=callbacks_list,
 		 validation_data=util.generate_data_from_list(val_data_dict), nb_val_samples=16, class_weight=None, initial_epoch=0)
@@ -150,5 +154,25 @@ def train_full_network(network, input_images, view_transformation, output_views)
 	print hist.history
 	return hist
 
+def load_autoenocoder_model_weights(model, weights_path):
+	weights = h5py.File(weights_path)
 
-
+	# Subset of full network which resembles to autoencoder
+	layers = model.layers
+	image_encoder_network = layers[2].layers
+	image_decoder_network = layers[5].layers
+	combined_network = np.concatenate((image_encoder_network, image_decoder_network))
+	
+	for layer in combined_network:
+		layer_name = layer.name
+		
+		if 'dense_3' in layer_name:
+			pretrained_w = weights['model_weights'][layer_name].values()[0]
+			pretrained_b = weights['model_weights'][layer_name].values()[1]
+			padding_w = layer.get_weights()[0][-256:,]
+			
+			new_weight_matrix = [np.concatenate((pretrained_w.value, padding_w)), pretrained_b]
+			
+			layer.set_weights(np.array(new_weight_matrix))
+		else:
+			layer.set_weights(weights['model_weights'][layer_name].values())

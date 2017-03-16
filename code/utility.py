@@ -42,14 +42,54 @@ def generate_autoencoder_data_from_list(dataArr):
 
 		img4 = np.asarray(img4)
 		yield {'convolution2d_input_1': img4}, {'reshape_3': img4}
-		#yield (img,img)
 
-def generate_data_array_for_autoencoder(dataPath='../data/train/'):
-	dataArr = []
+def get_azimuth_transformation(in_path, out_path):
+	in_f = in_path.split('/')[-1]
+	out_f = out_path.split('/')[-1]
+
+	in_azimuth = int(in_f.split('_')[0]) / 20
+	out_azimuth = int(out_f.split('_')[0]) / 20
+	azimuth_bin = (in_azimuth - out_azimuth) % 19
+	
+	azimuth_onehot = np.zeros((1,19))
+	azimuth_onehot[0][azimuth_bin] = 1
+	
+	return azimuth_onehot
+	
+def generate_data_from_list(data_dict):
+	while 1:
+		#randomly sample a model
+		models = data_dict.keys()
+		rand_model = random.choice(models)
+
+		#randomly sample a elevation from the chosen model
+		elevations = data_dict[rand_model].keys()
+		rand_elev = random.choice(elevations)
+
+		in_img_path, out_img_path = random.sample(data_dict[rand_model][rand_elev], 2)
+		
+		view_transformation = get_azimuth_transformation(in_img_path, out_img_path)
+
+		#TODO: figure out some way to bin these in 19 bins
+		in_img = np.asarray(Image.open(in_img_path).convert('RGB'), dtype=np.uint8)
+		out_img = np.asarray(Image.open(out_img_path).convert('RGB'), dtype=np.uint8)
+		
+		msk = np.reshape(np.asarray(img_mask_gen(out_img_path)), (224, 224, 1))
+
+
+		yield ({'image_input': np.asarray([in_img]), 'view_input': view_transformation}, 
+			{'sequential_3': np.asarray([out_img]), 'sequential_4': np.asarray([msk])})
+		
+
+def generate_data_dictionary(dataPath='../data/chairs/'):
+	val_data_dict = {}
+	train_data_dict = {}
+
+	i=1
 	for path,dirs,files in os.walk(dataPath):
 		#print path
 		for dr in dirs:
-			#print dr
+			print dr
 			if dr!='model_views' and dr != '':
 				drPath = path+'/'+dr
 				if '//' not in drPath:
@@ -57,17 +97,37 @@ def generate_data_array_for_autoencoder(dataPath='../data/train/'):
 					shutil.rmtree(drPath)
 			#pruning complete
 			elif dr =='model_views':
+				train_data_dict[i]={}
+				val_data_dict[i]={}
 				inpath = os.path.join(dataPath,path[len(dataPath):]) + '/'+dr
 				for files in os.walk(inpath):
 					for fList in files:					
 						for f in fList:
 							if '.png' in f:
+								#find elevation of file
+								elevation = int(f.split('_')[1].replace('.png', ''))
+
+								if elevation not in train_data_dict[i]:
+									train_data_dict[i][elevation] = []
+									val_data_dict[i][elevation] = []
+
 								readLoc = inpath + '/'+f
-								#print readLoc
-								dataArr.append(readLoc)
+								
+								train_data_dict[i][elevation].append(readLoc)
+								
+				#assign 20% data to val_data_dict
+				for e in train_data_dict[i]:
+					d = train_data_dict[i][e]
+					train_data_dict[i][e] = []
 
-	dataArr = np.asarray(dataArr)
+					random.shuffle(d)
+					split_index = int(len(d)*0.8)
+					train_data_dict[i][e].extend(d[0:split_index])
+					val_data_dict[i][e].extend(d[split_index:])
+
+				
+				i += 1
+
+	
 	#pdb.set_trace()
-	np.random.shuffle(dataArr)
-	return dataArr
-
+	return train_data_dict, val_data_dict
