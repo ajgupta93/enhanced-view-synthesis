@@ -83,15 +83,25 @@ def train_autoencoder(autoencoder, input_data):
 
 	#Callbacks
 	hist = History()
-	checkpoint = ModelCheckpoint('../model/weights.{epoch:02d}-{val_loss:.2f}.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='auto', period=10)
+	checkpoint = ModelCheckpoint('../model/weights.{epoch:02d}-{val_acc:.2f}.hdf5', monitor='val_acc', verbose=1, save_best_only=True, mode='auto', period=5)
 	callbacks_list = [hist, checkpoint]
 
+	dataArr = util.generate_data_array_for_autoencoder(dataPath='./../data/train/')
 	
-	history = autoencoder.fit(X, Y, batch_size=64, nb_epoch=100, verbose=1, callbacks=callbacks_list,
-		validation_split=0.2, validation_data=None, shuffle=False, class_weight=None, sample_weight=None, initial_epoch=0)
+	#for d in util.generate_autoencoder_data_from_list(dataArr):
+	#	pdb.set_trace()
+
+	history = autoencoder.fit_generator(util.generate_autoencoder_data_from_list(dataArr[:int(math.ceil(.8*len(dataArr)))]), samples_per_epoch = 293844, nb_epoch = 300, verbose=1, callbacks=callbacks_list,
+		 validation_data=util.generate_autoencoder_data_from_list(dataArr[int(math.ceil(.8*len(dataArr))):]), nb_val_samples=128, class_weight=None, initial_epoch=0)
 
 	print hist.history
 	return hist
 
-
-
+def test_autoencoder(autoencoder, test_data, sub_folder):
+	
+	test_image = test_data
+	# pdb.set_trace()
+	output = autoencoder.predict(test_image)
+	
+	# util.show_image(output)
+	util.save_as_image("../data/autoencoder_results/" + sub_folder, output)
