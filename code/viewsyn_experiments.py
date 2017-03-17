@@ -10,11 +10,9 @@ def load_data():
 	return train, test
 
 def run_autoencoder(train_images, test_images):
-	autoencoder_weights_path = '../model/weights.29-0.95.hdf5'
 	autoencoder = model.build_autoencoder()
 
 	#train autoencoder
-	fnetwork.load_autoenocoder_model_weights(full_network, weights_path)
 	hist = model.train_autoencoder(autoencoder, train_images)
 
 	#test autoencoder
@@ -22,17 +20,21 @@ def run_autoencoder(train_images, test_images):
 	model.test_autoencoder(autoencoder, test_images)
 	
 
-def run_full_network():
+def run_full_network(autoencoder_weights_path):
+
 	full_network = fnetwork.build_full_network()
 
+	fnetwork.load_autoenocoder_model_weights(full_network, autoencoder_weights_path)
+	pdb.set_trace()
 	fnetwork.train_full_network(full_network)
 
 
 if __name__ == '__main__':
-	train_images, test_images = load_data()
+	autoencoder_weights_path = '../model/weights.29-0.95.hdf5'
+	# train_images, test_images = load_data()
 
 	#run_autoencoder(train_images, test_images)
 
-	run_full_network()
+	run_full_network(autoencoder_weights_path)
 
 	#util.generate_data_dictionary()
