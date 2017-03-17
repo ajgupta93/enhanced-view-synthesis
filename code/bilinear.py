@@ -3,37 +3,81 @@ from keras.preprocessing import image
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from keras.models import Sequential, Model
+from keras.layers import *
 from bilinear_layer import Bilinear
 import tensorflow as tf
 import pdb
 
 # input image I, displacement matrix dx and dy
 def binsample(I, dx, dy):
-	sess = tf.Session()
-	pdb.set_trace()
-	I = I.eval(session=sess)
-	dx = dx.eval(session=sess)
-	dy = dy.eval(session=sess)
-
-	h = np.shape(I)[0]
-	w = np.shape(I)[1]
+	
+	#pdb.set_trace()
+	
+	h = 224 #np.shape(I)[0]
+	w = 224 #np.shape(I)[1]
 
 	O = np.zeros((h, w, 3))
 
-	for y in range(1, h - 1):
-		for x in range(1, w - 1):
-			val = getNeighbors(I, x + dx[y][x], y + dy[y][x])
-			O[y][x][0:3] = val[0:3]
-			#print(np.shape(val))
-	
 	x = range(224)
 	y = range(224)
+	X,Y = tf.meshgrid(x, y)
+	X, Y = tf.cast( X, tf.float32 ), tf.cast( Y, tf.float32 )
+	#pdb.set_trace()
+	X = X+dx
+	Y = Y+dy
+	batch_size=128
+	#pdb.set_trace()
+	O = tf.zeros([batch_size,224,224,3])
+	# tl = tf.slice(I, [0, 0, 0, 0], [batch_size, 222, 222, 3])
+	# tr = tf.slice(I, [0, 2, 2, 0], [batch_size, 222, 222, 3])
+	# bl = tf.slice(I, [0, 2, 0, 0], [batch_size, 222, 222, 3])
+	# br = tf.slice(I, [0, 0, 2, 0], [batch_size, 222, 222, 3])
+	# avg_tensor = (tl + tr + bl + br) / 4
+	for batch_img in range(batch_size):
+		X_batch = tf.gather_nd(X,indices=[[batch_img]])
+		Y_batch = tf.gather_nd(Y,indices=[[batch_img]])
+		I_batch = tf.gather_nd(I,indices=[[batch_img]])
+		X_gather = tf.cast(tf.gather_nd(X_batch[0] ,indices=zip(range(1,h-1),range(1,w-1))),tf.int32) 
+		Y_gather = tf.cast(tf.gather_nd(Y_batch[0] ,indices=zip(range(1,h-1),range(1,w-1))),tf.int32)
+		#pdb.set_trace()
+		dim = int(X_gather.get_shape()[0])
+		avg_vals = []
+		x_indices = []
+		y_indices = []
+		for idx in range(dim):
+			x_idx = X_gather[idx]
+			y_idx = Y_gather[idx]
+			lt = tf.gather_nd(I_batch[0],indices=[[y_idx-1,x_idx-1]])
+			rt = tf.gather_nd(I_batch[0],indices=[[y_idx-1,x_idx+1]])
+			lb = tf.gather_nd(I_batch[0],indices=[[y_idx+1,x_idx-1]])
+			rb = tf.gather_nd(I_batch[0],indices=[[y_idx+1,x_idx+1]])
+			avg = (lt+rt+lb+rb)/4
+			avg_vals.append(avg)
+			x_indices.append(x_idx)
+			y_indices.append(y_idx)
+			pdb.set_trace()
+		sparse_tensor = tf.SparseTensor(indices=[y_indices,x_indices],values=avg_vals, shape=[224,224,3])
+		pdb.set_trace()
+		
+	#for x_idx, y_idx in zip(X_gather,Y_gather):
 
-	X, Y = tf.meshgrid(x, y)
+	# for y in range(1, h - 1):
+	# 	for x in range(1, w - 1):
+	# 		index = [y, x]
+	# 		pdb.set_trace()
+	# 		x_ = tf.gather_nd(X, tf.stack(index), -1)
+	# 		val = getNeighbors(I, X_[y][x], Y_[y][x])
+	# 		O[y][x][0:3] = val[0:3
+	# 		#print(np.shape(val))
+	
+	
 
 	
-	return O
+	# return O
 def getNeighbors(I, x, y):
+	pdb.set_trace()
+	
+	
 	y = int(y)
 	x = int(x)
 
@@ -49,6 +93,8 @@ def getNeighbors(I, x, y):
 def test_bilinear_layer():
 	model = Sequential()
 	model.add(Bilinear(binsample, input_shape=(224, 224, 5)))
+
+	print model.summary()
 
 	pdb.set_trace()
 

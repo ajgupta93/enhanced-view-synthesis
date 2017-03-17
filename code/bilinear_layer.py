@@ -7,14 +7,16 @@ import pdb
 class Bilinear(Layer):
 	def __init__(self, bilinear_f, **kwargs):
 		self.bilinear = bilinear_f
-		super(Bilinear, self).__init__(**kwargs)
- 		self.input_spec = [InputSpec(ndim=4)]
+		self.input_spec = [InputSpec(ndim=4)]
 
+		super(Bilinear, self).__init__(**kwargs)
+ 		
 	def build(self, input_shape):
 		self.input_spec = [InputSpec(shape=input_shape)]
 
 	def call(self, x, mask=None):
 		#print "hello",self.input_spec[0].shape
+		print ">:(" , x[0][:,:,1][0][0]
 		x_unstacked = tf.unstack(x, 5, axis=3)
 		img = tf.stack(x_unstacked[0:3], axis=3)
 		dx = x_unstacked[3]
