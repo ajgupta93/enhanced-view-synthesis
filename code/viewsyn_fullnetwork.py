@@ -4,6 +4,7 @@ from keras.layers import *
 from keras.models import Sequential, Model
 from keras.optimizers import *
 from keras.callbacks import *
+from bilinear_layer import Bilinear
 import utility as util
 import pdb
 
@@ -95,7 +96,10 @@ def build_full_network():
 	view_encoder = build_viewpoint_encoder()
 
 	decoder = build_common_decoder()
-	decoder = output_layer_decoder(decoder, 3) #5
+	decoder = output_layer_decoder(decoder, 5) #5
+
+	#add bilinear layer
+	decoder.add(Bilinear())
 
 	mask_decoder = build_common_decoder()
 	mask_decoder = output_layer_decoder(mask_decoder, 1)
@@ -113,14 +117,6 @@ def build_full_network():
 
 	encoder_decoder = Model(input=[image_input, view_input], output=[main_output, mask_output])
 
-	#pdb.set_trace()
-
-	#merge outputs of these two networks
-	# image_view_encoder = Merge([image_encoder, view_encoder], mode='concat') 
-
-	# encoder_decoder = Sequential()
-	# encoder_decoder.add(image_view_encoder)
-	# encoder_decoder.add(decoder)
 
 	opt = get_optimizer('adam')
 	encoder_decoder.compile(optimizer=opt, metrics=['accuracy'],
