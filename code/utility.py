@@ -59,7 +59,7 @@ def generate_data_from_list(data_dict):
 			{'sequential_3': np.asarray([out_img]), 'sequential_4': np.asarray([msk])})
 		
 
-def generate_data_dictionary(dataPath='../data/chairs/'):
+def generate_data_dictionary(dataPath='../data/train/'):
 	val_data_dict = {}
 	train_data_dict = {}
 

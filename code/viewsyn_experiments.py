@@ -27,7 +27,7 @@ def run_full_network():
 
 
 if __name__ == '__main__':
-	train_images, test_images = load_data()
+	#train_images, test_images = load_data()
 
 	#run_autoencoder(train_images, test_images)
 
