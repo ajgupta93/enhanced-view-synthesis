@@ -33,7 +33,7 @@ def binsample(I, dx, dy):
 	# lin_img = tf.gather_nd(I, new_idx)
 	# img = tf.reshape(lin_img, [224, 224, 3])
 	# pdb.set_trace()
-	batch_size = 4
+	batch_size = 1
 
 	# tl = tf.slice(I, [0, 0, 0, 0], [batch_size, 222, 222, 3])
 	# tr = tf.slice(I, [0, 0, 2, 0], [batch_size, 222, 222, 3])
@@ -59,7 +59,7 @@ def binsample(I, dx, dy):
 		img = tf.reshape(transformed_bilinear_image, [1, 224, 224, 3])
 		transformed_list.append(img)
 	transformed_tensor = tf.stack(transformed_list)
-	return transformed_tensor
+	return transformed_list
 
 def load_test_data(current_chair_folder):
 	img = []
@@ -88,7 +88,7 @@ def test_bilinear_layer():
 	test_data = load_test_data(current_chair_folder)
 	pdb.set_trace()
 	# util.save_as_image("../data/", [img])
-	out = np.squeeze(model.predict(test_data))
+	out = model.predict(test_data)
 	pdb.set_trace()
 	util.save_as_image("../data/bilinear_output/", out)
 
