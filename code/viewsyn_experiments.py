@@ -5,21 +5,19 @@ import utility as util
 import h5py
 import pdb
 
-def load_data():
-	train = np.load('../data/train_images_autoencoder.npy')
-	test = np.load('../data/test_images_autoencoder.npy')
+def load_test_data():
+	#TODO
+	return None
 
-	return train, test
-
-def run_autoencoder(train_images, test_images):
+def run_autoencoder(test_images):
 	autoencoder = model.build_autoencoder()
 
 	#train autoencoder
-	hist = model.train_autoencoder(autoencoder, train_images)
+	hist = model.train_autoencoder(autoencoder)
 
 	#test autoencoder
-	autoencoder.load_weights('../model/weights.19-225.48.hdf5')
-	model.test_autoencoder(autoencoder, test_images)
+	#autoencoder.load_weights('../model/weights.19-225.48.hdf5')
+	#model.test_autoencoder(autoencoder, test_images)
 	
 
 def run_full_network():

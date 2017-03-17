@@ -4,4 +4,8 @@
 *.jpg
 *.zip
 /data/*
+<<<<<<< HEAD
 *.hdf5
+=======
+*.swp
+>>>>>>> 881f6cb243baae4aa07857af759dcc9d53f8e248
