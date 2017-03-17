@@ -23,7 +23,7 @@ def run_autoencoder(test_images):
 def run_full_network():
 	weights_path = '../model/weights.29-0.95.hdf5'
 	full_network = fnetwork.build_full_network()
-	fnetwork.load_autoenocoder_model_weights(full_network, weights_path)
+	# fnetwork.load_autoenocoder_model_weights(full_network, weights_path)
 
 	fnetwork.train_full_network(full_network)
 

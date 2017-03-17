@@ -29,7 +29,7 @@ def load_test_data(current_chair_folder):
 
 def test_bilinear_layer():
 	model = Sequential()
-	model.add(Bilinear(binsample, input_shape=(224, 224, 5)))
+	model.add(Bilinear(input_shape=(224, 224, 5)))
 
 	print model.summary()
 
