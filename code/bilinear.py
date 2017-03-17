@@ -59,7 +59,7 @@ def binsample(I, dx, dy):
 		img = tf.reshape(transformed_bilinear_image, [1, 224, 224, 3])
 		transformed_list.append(img)
 	transformed_tensor = tf.stack(transformed_list)
-	return transformed_tensor
+	return tf.squeeze(transformed_tensor)
 
 def load_test_data(current_chair_folder):
 	img = []
@@ -86,9 +86,8 @@ def test_bilinear_layer():
 
 	current_chair_folder = "../data/bilinear_test/"
 	test_data = load_test_data(current_chair_folder)
-	pdb.set_trace()
-	# util.save_as_image("../data/", [img])
-	out = np.squeeze(model.predict(test_data))
+	
+	out = model.predict(test_data)
 	pdb.set_trace()
 	util.save_as_image("../data/bilinear_output/", out)
 
