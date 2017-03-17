@@ -6,6 +6,7 @@ from keras.optimizers import *
 from keras.callbacks import *
 import utility as util
 import pdb
+import h5py
 
 def get_optimizer(name = 'adagrad', l_rate = 0.0001, dec = 0.0, b_1 = 0.9, b_2 = 0.999, mom = 0.5, rh = 0.9):
 	eps = 1e-8
@@ -92,10 +93,10 @@ def output_layer_decoder(model, n_channel):
 
 def build_full_network():
 	image_encoder = build_image_encoder()
-	view_encoder = build_viewpoint_encoder()
 
 	decoder = build_common_decoder()
 	decoder = output_layer_decoder(decoder, 3) #5
+	view_encoder = build_viewpoint_encoder()
 
 	mask_decoder = build_common_decoder()
 	mask_decoder = output_layer_decoder(mask_decoder, 1)
@@ -152,5 +153,26 @@ def train_full_network(network):
 	print hist.history
 	return hist
 
+def load_autoenocoder_model_weights(model, weights_path):
+	weights = h5py.File(weights_path)
 
+	# Subset of full network which resembles to autoencoder
+	layers = model.layers
+	image_encoder_network = layers[2].layers
+	image_decoder_network = layers[5].layers
+	combined_network = np.concatenate((image_encoder_network, image_decoder_network))
+	
+	for layer in combined_network:
+		layer_name = layer.name
+		
+		if 'dense_3' in layer_name:
+			pretrained_w = weights['model_weights'][layer_name].values()[0]
+			pretrained_b = weights['model_weights'][layer_name].values()[1]
+			padding_w = layer.get_weights()[0][-256:,]
+			
+			new_weight_matrix = [np.concatenate((pretrained_w.value, padding_w)), pretrained_b]
+			
+			layer.set_weights(np.array(new_weight_matrix))
+		else:
+			layer.set_weights(weights['model_weights'][layer_name].values())
 

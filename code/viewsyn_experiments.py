@@ -10,9 +10,11 @@ def load_data():
 	return train, test
 
 def run_autoencoder(train_images, test_images):
+	autoencoder_weights_path = '../model/weights.29-0.95.hdf5'
 	autoencoder = model.build_autoencoder()
 
 	#train autoencoder
+	fnetwork.load_autoenocoder_model_weights(full_network, weights_path)
 	hist = model.train_autoencoder(autoencoder, train_images)
 
 	#test autoencoder
