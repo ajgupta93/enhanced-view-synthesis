@@ -20,44 +20,47 @@ def binsample(I, dx, dy):
 
 	x = range(224)
 	y = range(224)
-	X,Y = tf.meshgrid(x, y)
+	X, Y = tf.meshgrid(x, y)
 	X, Y = tf.cast( X, tf.float32 ), tf.cast( Y, tf.float32 )
 	#pdb.set_trace()
-	X = X+dx
-	Y = Y+dy
-	batch_size=128
+	X = X + dx
+	Y = Y + dy
+	batch_size = 128
 	#pdb.set_trace()
 	O = tf.zeros([batch_size,224,224,3])
-	# tl = tf.slice(I, [0, 0, 0, 0], [batch_size, 222, 222, 3])
-	# tr = tf.slice(I, [0, 2, 2, 0], [batch_size, 222, 222, 3])
-	# bl = tf.slice(I, [0, 2, 0, 0], [batch_size, 222, 222, 3])
-	# br = tf.slice(I, [0, 0, 2, 0], [batch_size, 222, 222, 3])
-	# avg_tensor = (tl + tr + bl + br) / 4
-	for batch_img in range(batch_size):
-		X_batch = tf.gather_nd(X,indices=[[batch_img]])
-		Y_batch = tf.gather_nd(Y,indices=[[batch_img]])
-		I_batch = tf.gather_nd(I,indices=[[batch_img]])
-		X_gather = tf.cast(tf.gather_nd(X_batch[0] ,indices=zip(range(1,h-1),range(1,w-1))),tf.int32) 
-		Y_gather = tf.cast(tf.gather_nd(Y_batch[0] ,indices=zip(range(1,h-1),range(1,w-1))),tf.int32)
-		#pdb.set_trace()
-		dim = int(X_gather.get_shape()[0])
-		avg_vals = []
-		x_indices = []
-		y_indices = []
-		for idx in range(dim):
-			x_idx = X_gather[idx]
-			y_idx = Y_gather[idx]
-			lt = tf.gather_nd(I_batch[0],indices=[[y_idx-1,x_idx-1]])
-			rt = tf.gather_nd(I_batch[0],indices=[[y_idx-1,x_idx+1]])
-			lb = tf.gather_nd(I_batch[0],indices=[[y_idx+1,x_idx-1]])
-			rb = tf.gather_nd(I_batch[0],indices=[[y_idx+1,x_idx+1]])
-			avg = (lt+rt+lb+rb)/4
-			avg_vals.append(avg)
-			x_indices.append(x_idx)
-			y_indices.append(y_idx)
-			pdb.set_trace()
-		sparse_tensor = tf.SparseTensor(indices=[y_indices,x_indices],values=avg_vals, shape=[224,224,3])
-		pdb.set_trace()
+	tl = tf.slice(I, [0, 0, 0, 0], [batch_size, 222, 222, 3])
+	tr = tf.slice(I, [0, 0, 2, 0], [batch_size, 222, 222, 3])
+	bl = tf.slice(I, [0, 2, 0, 0], [batch_size, 222, 222, 3])
+	br = tf.slice(I, [0, 2, 2, 0], [batch_size, 222, 222, 3])
+	bilinear_output = (tl + tr + bl + br) / 4
+	bilinear_output_with_padding = tf.pad(bilinear_output,[[0, 0], [1, 1], [1, 1], [0, 0]])
+	# for batch_img in range(batch_size):
+	# 	X_batch = tf.gather_nd(X,indices=[[batch_img]])
+	# 	Y_batch = tf.gather_nd(Y,indices=[[batch_img]])
+	# 	I_batch = tf.gather_nd(I,indices=[[batch_img]])
+	# 	X_gather = tf.cast(tf.gather_nd(X_batch[0] ,indices=zip(range(1,h-1),range(1,w-1))),tf.int32) 
+	# 	Y_gather = tf.cast(tf.gather_nd(Y_batch[0] ,indices=zip(range(1,h-1),range(1,w-1))),tf.int32)
+	# 	#pdb.set_trace()
+	# 	dim = int(X_gather.get_shape()[0])
+	# 	avg_vals = []
+	# 	x_indices = []
+	# 	y_indices = []
+	# 	for idx in range(dim):
+	# 		x_idx = X_gather[idx]
+	# 		y_idx = Y_gather[idx]
+	# 		lt = tf.gather_nd(I_batch[0],indices=[[y_idx-1,x_idx-1]])
+	# 		rt = tf.gather_nd(I_batch[0],indices=[[y_idx-1,x_idx+1]])
+	# 		lb = tf.gather_nd(I_batch[0],indices=[[y_idx+1,x_idx-1]])
+	# 		rb = tf.gather_nd(I_batch[0],indices=[[y_idx+1,x_idx+1]])
+	# 		avg = (lt+rt+lb+rb)/4
+	# 		avg_vals.append(avg)
+	# 		x_indices.append(x_idx)
+	# 		y_indices.append(y_idx)
+	# 		pdb.set_trace()
+	# 	sparse_tensor = tf.SparseTensor(indices=[y_indices,x_indices],values=avg_vals, shape=[224,224,3])
+	# 	pdb.set_trace()
+
+	return bilinear_output_with_padding
 		
 	#for x_idx, y_idx in zip(X_gather,Y_gather):
 
