@@ -25,7 +25,8 @@ def run_full_network(autoencoder_weights_path):
 
 	full_network = fnetwork.build_full_network()
 
-	fnetwork.load_autoenocoder_model_weights(full_network, autoencoder_weights_path)
+	#fnetwork.load_autoenocoder_model_weights(full_network, autoencoder_weights_path)
+	
 	fnetwork.train_full_network(full_network)
 
 
