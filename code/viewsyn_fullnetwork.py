@@ -7,6 +7,7 @@ from keras.callbacks import *
 from bilinear_layer import Bilinear
 import utility as util
 import pdb
+import constants as const
 
 def get_optimizer(name = 'adagrad', l_rate = 0.0001, dec = 0.0, b_1 = 0.9, b_2 = 0.999, mom = 0.5, rh = 0.9):
 	eps = 1e-8
@@ -142,7 +143,7 @@ def train_full_network(network):
 
 	train_data_dict, val_data_dict = util.generate_data_dictionary(dataPath = "../data/train/")
 
-	history = network.fit_generator(util.generate_data_from_list(train_data_dict), samples_per_epoch=879, nb_epoch=100, verbose=1, callbacks=callbacks_list,
+	history = network.fit_generator(util.generate_data_from_list(train_data_dict), samples_per_epoch=const.samples_per_epoch, nb_epoch=100, verbose=1, callbacks=callbacks_list,
 		 validation_data=util.generate_data_from_list(val_data_dict), nb_val_samples=16, class_weight=None, initial_epoch=0)
 
 	print hist.history

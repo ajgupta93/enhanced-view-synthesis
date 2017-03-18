@@ -3,9 +3,10 @@ from keras.engine.topology import InputSpec, Layer
 import numpy as np
 import tensorflow as tf
 import pdb
+import constants as const
 
 # input image I, displacement matrix dx and dy
-def binsample(I, dx, dy, batch_size = 256):
+def binsample(I, dx, dy, batch_size = const.batch_size):
 	
 	#pdb.set_trace()
 	

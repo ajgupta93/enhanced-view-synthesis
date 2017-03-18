@@ -7,6 +7,7 @@ from PIL import Image
 import os
 import pdb
 import shutil 
+import constants as const
 
 def save_as_image(images):
 	for i in range(0, len(images)):
@@ -34,7 +35,7 @@ def get_azimuth_transformation(in_path, out_path):
 	
 	return azimuth_onehot
 	
-def generate_data_from_list(data_dict, batch_size = 256):
+def generate_data_from_list(data_dict, batch_size = const.batch_size):
 	while 1:
 		in_imgb = []
 		out_imgb = []
@@ -54,7 +55,6 @@ def generate_data_from_list(data_dict, batch_size = 256):
 			
 			view_transformation = get_azimuth_transformation(in_img_path, out_img_path)
 
-			#TODO: figure out some way to bin these in 19 bins
 			in_img = np.asarray(Image.open(in_img_path).convert('RGB'), dtype=np.uint8)
 			out_img = np.asarray(Image.open(out_img_path).convert('RGB'), dtype=np.uint8)
 			
@@ -63,8 +63,8 @@ def generate_data_from_list(data_dict, batch_size = 256):
 			in_imgb.append(in_img)
 			out_imgb.append(out_img)
 			mskb.append(msk)
-			view_transformationb.append(view_transformationb)
-
+			view_transformationb.append(view_transformation[0])
+			
 		
 		yield ({'image_input': np.asarray(in_imgb), 'view_input': np.asarray(view_transformationb)}, 
 			{'sequential_3': np.asarray(out_imgb), 'sequential_4': np.asarray(mskb)})
