@@ -123,7 +123,7 @@ def build_full_network():
 
 	opt = get_optimizer('adam')
 	encoder_decoder.compile(optimizer=opt, metrics=['accuracy'],
-		loss={'bilinear_1': 'mean_squared_error', 'sequential_4': 'binary_crossentropy'},
+		loss={'bilinear_1': 'mean_absolute_error', 'sequential_4': 'binary_crossentropy'},
               loss_weights={'bilinear_1': 1.0, 'sequential_4': 0.1})
 
 	print encoder_decoder.summary()
