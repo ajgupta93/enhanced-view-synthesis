@@ -56,7 +56,7 @@ def generate_data_from_list(data_dict):
 
 
 		yield ({'image_input': np.asarray([in_img]), 'view_input': view_transformation}, 
-			{'sequential_3': np.asarray([out_img]), 'sequential_4': np.asarray([msk])})
+			{'sequential_2': np.asarray([out_img]), 'sequential_4': np.asarray([msk])})
 		
 
 def generate_data_dictionary(dataPath='../data/chairs/'):

@@ -21,7 +21,7 @@ def binsample(I, dx, dy):
 	X = (X + dx) % 224
 	Y = (Y + dy) % 224
 	X, Y = tf.cast( X, tf.int32 ), tf.cast( Y, tf.int32 )
-	batch_size = 4
+	batch_size = 1
 
 	transformed_list = []
 	for current_index in range(batch_size):
