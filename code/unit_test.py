@@ -1,5 +1,5 @@
 from keras.preprocessing import image
-from keras.models import Sequential
+from keras.models import Sequential, Model
 from keras.layers import *
 from bilinear_layer import Bilinear
 import numpy as np
@@ -8,6 +8,7 @@ import utility as util
 import h5py, pdb, os
 import viewsyn_model as model
 import viewsyn_fullnetwork as fnetwork
+import random
 
 def load_test_data(current_chair_folder):
 	img = []
@@ -24,6 +25,24 @@ def load_test_data(current_chair_folder):
 		fp = np.concatenate((im, dx, dy), axis = 2)
 		img.append(np.asarray(fp))
 	return np.array(img)
+
+def load_test_data_replication(current_chair_folder):
+	img = []
+	view_transform = []
+
+	filename = current_chair_folder+'input.png'
+
+	for i in range(19):
+		im = image.img_to_array(image.load_img(filename))
+		img.append(np.asarray(im))
+		
+		vp = np.zeros(19)
+		#index = random.randint(0, 18)
+		vp[i] = 1
+
+		view_transform.append(vp)
+	
+	return [np.array(img), np.array(view_transform)]
 
 def test_load_weights():
 	weights_path = '../model/weights.29-0.95.hdf5'
@@ -93,12 +112,31 @@ def test_full_network():
 	test_data = load_test_data(current_chair_folder)
 	
 	out = full_network.predict(test_data)
+
 	util.save_as_image("../data/chairs/eb3029393f6e60713ae92e362c52d19d/test_fullNet/", out)
 
+def test_replication_network():
+	weights_path = '../model/weights.09-10.49.hdf5'
+	
+	full_network = fnetwork.build_full_network()
+	full_network.load_weights(weights_path)
 
+	current_chair_folder = "../data/chairs/eb3029393f6e60713ae92e362c52d19d/test_replication/input/"
+	test_data = load_test_data_replication(current_chair_folder)
+	
+	out = full_network.predict(test_data)
+	util.save_as_image("../data/chairs/eb3029393f6e60713ae92e362c52d19d/test_replication/", out[0])
 
+	
+	layer_name = 'sequential_3'
+	#pdb.set_trace()
+	intermediate_layer_model = Model(input=full_network.input, output=full_network.get_layer(layer_name).get_output_at(1))
+	intermediate_output = intermediate_layer_model.predict(test_data)
+	#pdb.set_trace()
+	
+	
 if __name__ == '__main__':
 	#Remember to set batch_size accordingly.
 	#test_bilinear_layer()
 	#test_load_weights()
-	test_full_network()
+	test_replication_network()
