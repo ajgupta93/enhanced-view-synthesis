@@ -78,7 +78,7 @@ def generate_data_dictionary(dataPath='../data/train/'):
 	for path,dirs,files in os.walk(dataPath):
 		#print path
 		for dr in dirs:
-			print dr
+			#print dr
 			if dr!='model_views' and dr != '':
 				drPath = path+'/'+dr
 				if '//' not in drPath:
