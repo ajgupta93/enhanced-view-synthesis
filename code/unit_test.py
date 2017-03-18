@@ -84,7 +84,7 @@ def test_bilinear_layer():
 	util.save_as_image("../data/chairs/eb3029393f6e60713ae92e362c52d19d/", out)
 
 def test_full_network():
-	weights_path = '../model/weights.29-0.95.hdf5'
+	weights_path = '../model/weights.39-618.91.hdf5'
 	
 	full_network = fnetwork.build_full_network()
 	full_network.load_weights(weights_path)
@@ -93,11 +93,12 @@ def test_full_network():
 	test_data = load_test_data(current_chair_folder)
 	
 	out = full_network.predict(test_data)
-	util.save_as_image("../data/chairs/eb3029393f6e60713ae92e362c52d19d/", out)
+	util.save_as_image("../data/chairs/eb3029393f6e60713ae92e362c52d19d/test_fullNet/", out)
 
 
 
 if __name__ == '__main__':
 	#Remember to set batch_size accordingly.
-	test_bilinear_layer()
-	test_load_weights()
+	#test_bilinear_layer()
+	#test_load_weights()
+	test_full_network()
