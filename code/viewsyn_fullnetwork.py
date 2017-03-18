@@ -7,6 +7,7 @@ from keras.callbacks import *
 from bilinear_layer import Bilinear
 import utility as util
 import pdb
+import h5py
 import constants as const
 
 def get_optimizer(name = 'adagrad', l_rate = 0.0001, dec = 0.0, b_1 = 0.9, b_2 = 0.999, mom = 0.5, rh = 0.9):
@@ -94,13 +95,13 @@ def output_layer_decoder(model, n_channel):
 
 def build_full_network():
 	image_encoder = build_image_encoder()
-	view_encoder = build_viewpoint_encoder()
 
 	decoder = build_common_decoder()
 	decoder = output_layer_decoder(decoder, 5) #5
 
 	#add bilinear layer
 	decoder.add(Bilinear())
+	view_encoder = build_viewpoint_encoder()
 
 	mask_decoder = build_common_decoder()
 	mask_decoder = output_layer_decoder(mask_decoder, 1)
@@ -121,8 +122,8 @@ def build_full_network():
 
 	opt = get_optimizer('adam')
 	encoder_decoder.compile(optimizer=opt, metrics=['accuracy'],
-		loss={'sequential_3': 'mean_squared_error', 'sequential_4': 'binary_crossentropy'},
-              loss_weights={'sequential_3': 1.0, 'sequential_4': 0.1})
+		loss={'sequential_2': 'mean_squared_error', 'sequential_4': 'binary_crossentropy'},
+              loss_weights={'sequential_2': 1.0, 'sequential_4': 0.1})
 
 	print encoder_decoder.summary()
 
@@ -149,5 +150,41 @@ def train_full_network(network):
 	print hist.history
 	return hist
 
+def load_autoenocoder_model_weights(model, weights_path):
+	weights = h5py.File(weights_path)
 
+	# Subset of full network which resembles to autoencoder
+	layers = model.layers
+	image_encoder_network = layers[2].layers
+	image_decoder_network = layers[5].layers
+	combined_network = np.concatenate((image_encoder_network, image_decoder_network))
+	
+	for layer in combined_network:
+		layer_name = layer.name
+		
+		# Not present in autoencoder layer
+		if 'bilinear_1' in layer_name: continue
+		
+		# Dimension changes for these two layers due to viewpoint transformation(dense_3) and Appearance flow(deconvolution2d_6)
+		if 'dense_3' in layer_name or 'deconvolution2d_6' in layer_name:
+
+			# Getting original set of weights from autoencoder network
+			pretrained_w = weights['model_weights'][layer_name].values()[0]
+			pretrained_b = weights['model_weights'][layer_name].values()[1]
+			
+			# Adding the padding weights due to extra channels.
+			if 'dense_3' in layer_name:
+				padding_w = layer.get_weights()[0][-256:,]
+				new_weight_matrix = [np.concatenate((pretrained_w.value, padding_w)), pretrained_b]
+			else:
+				padding_w = layer.get_weights()[0][:,:,:,-2:]
+				padding_b = layer.get_weights()[1][-2:]
+				new_weight_matrix = [np.concatenate((pretrained_w.value, padding_w), axis = 3), np.concatenate((pretrained_b, padding_b))]
+
+			#Setting the new weights
+			layer.set_weights(np.array(new_weight_matrix))
+
+		# Set of weights for other layers. Dimension doesn't changes.
+		else:
+			layer.set_weights(weights['model_weights'][layer_name].values())
 

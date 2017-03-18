@@ -67,7 +67,7 @@ def generate_data_from_list(data_dict, batch_size = const.batch_size):
 			
 		
 		yield ({'image_input': np.asarray(in_imgb), 'view_input': np.asarray(view_transformationb)}, 
-			{'sequential_3': np.asarray(out_imgb), 'sequential_4': np.asarray(mskb)})
+			{'sequential_2': np.asarray(out_imgb), 'sequential_4': np.asarray(mskb)})
 		
 
 def generate_data_dictionary(dataPath='../data/train/'):
