@@ -95,35 +95,51 @@ def output_layer_decoder(model, n_channel):
 
 def build_full_network():
 	image_encoder = build_image_encoder()
-
-	decoder = build_common_decoder()
-	decoder = output_layer_decoder(decoder, 5) #5
-
-	#add bilinear layer
-	decoder.add(Bilinear())
 	view_encoder = build_viewpoint_encoder()
 
+	#pixel regression decoder
+	pixel_decoder = build_common_decoder()
+	pixel_decoder = output_layer_decoder(pixel_decoder, 3) 
+
+	#AFF
+	AFF_decoder = build_common_decoder()
+	AFF_decoder = output_layer_decoder(AFF_decoder, 2) 
+
+	#mask decoder
 	mask_decoder = build_common_decoder()
 	mask_decoder = output_layer_decoder(mask_decoder, 1)
 
+	#input layers 
 	image_input = Input(shape=(224, 224, 3,), name='image_input')
 	view_input = Input(shape=(19,), name='view_input')
 
+	#various outputs
 	image_output = image_encoder(image_input)
 	view_output = view_encoder(view_input)
 
 	image_view_out = merge([image_output, view_output], mode='concat', concat_axis=1)
 
-	main_output = decoder(image_view_out)
+	AFF_output = AFF_decoder(image_view_out)
+	bilinear_in = merge([image_input, AFF_output], mode='concat', concat_axis=3)
+	bilinear_out = Bilinear()(bilinear_in)
+
+	pixel_output = pixel_decoder(image_view_out)
 	mask_output = mask_decoder(image_view_out)
 
+	#combine pixel_output and AFF_output to one
+	pixel_aff_out = merge([pixel_output, AFF_output], mode='concat', concat_axis=3)
+	main_output = Dense(4096)(pixel_aff_out)
+	
+	#TODO:think how will you convert it back to 224x2243x3
+
+	#full_network
 	encoder_decoder = Model(input=[image_input, view_input], output=[main_output, mask_output])
 
 
 	opt = get_optimizer('adam')
 	encoder_decoder.compile(optimizer=opt, metrics=['accuracy'],
-		loss={'sequential_2': 'mean_squared_error', 'sequential_4': 'binary_crossentropy'},
-              loss_weights={'sequential_2': 1.0, 'sequential_4': 0.1})
+		loss={'dense_11': 'mean_absolute_error', 'sequential_5': 'binary_crossentropy'},
+              loss_weights={'dense_11': 1.0, 'sequential_5': 0.1})
 
 	print encoder_decoder.summary()
 
