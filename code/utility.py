@@ -9,7 +9,7 @@ import pdb
 import shutil 
 import constants as const
 
-def save_as_image(images):
+def save_as_image(filepath, images):
 	for i in range(0, len(images)):
 		filename = filepath+str(i)+".png"
 		imsave(filename, images[i])
