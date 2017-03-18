@@ -3,9 +3,10 @@ from keras.engine.topology import InputSpec, Layer
 import numpy as np
 import tensorflow as tf
 import pdb
+import constants as const
 
 # input image I, displacement matrix dx and dy
-def binsample(I, dx, dy):
+def binsample(I, dx, dy, batch_size = const.batch_size):
 	
 	#pdb.set_trace()
 	
@@ -21,11 +22,16 @@ def binsample(I, dx, dy):
 	X = (X + dx) % 224
 	Y = (Y + dy) % 224
 	X, Y = tf.cast( X, tf.int32 ), tf.cast( Y, tf.int32 )
+<<<<<<< HEAD
 	batch_size = 1
+=======
+>>>>>>> b833267739ca10bd2fdf4f2ea02ef533f1cb703e
 
 	transformed_list = []
+	current_index = 0
+	
 	for current_index in range(batch_size):
-		# pdb.set_trace()
+	
 		current_image = I[current_index]
 		tl = tf.slice(current_image, [0, 0, 0], [222, 222, 3])
 		tr = tf.slice(current_image, [0, 2, 0], [222, 222, 3])
@@ -41,7 +47,8 @@ def binsample(I, dx, dy):
 		img = tf.reshape(transformed_bilinear_image, [224, 224, 3])
 		transformed_list.append(img)
 
-	transformed_tensor = tf.stack(transformed_list)
+		transformed_tensor = tf.stack(transformed_list)
+		
 	return transformed_tensor
 
 class Bilinear(Layer):

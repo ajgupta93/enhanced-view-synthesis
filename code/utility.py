@@ -7,6 +7,7 @@ from PIL import Image
 import os
 import pdb
 import shutil 
+import constants as const
 
 def save_as_image(images):
 	for i in range(0, len(images)):
@@ -34,32 +35,42 @@ def get_azimuth_transformation(in_path, out_path):
 	
 	return azimuth_onehot
 	
-def generate_data_from_list(data_dict):
+def generate_data_from_list(data_dict, batch_size = const.batch_size):
 	while 1:
-		#randomly sample a model
-		models = data_dict.keys()
-		rand_model = random.choice(models)
+		in_imgb = []
+		out_imgb = []
+		mskb = []
+		view_transformationb = []
 
-		#randomly sample a elevation from the chosen model
-		elevations = data_dict[rand_model].keys()
-		rand_elev = random.choice(elevations)
+		for i in range(batch_size):
+			#randomly sample a model
+			models = data_dict.keys()
+			rand_model = random.choice(models)
 
-		in_img_path, out_img_path = random.sample(data_dict[rand_model][rand_elev], 2)
+			#randomly sample a elevation from the chosen model
+			elevations = data_dict[rand_model].keys()
+			rand_elev = random.choice(elevations)
+
+			in_img_path, out_img_path = random.sample(data_dict[rand_model][rand_elev], 2)
+			
+			view_transformation = get_azimuth_transformation(in_img_path, out_img_path)
+
+			in_img = np.asarray(Image.open(in_img_path).convert('RGB'), dtype=np.uint8)
+			out_img = np.asarray(Image.open(out_img_path).convert('RGB'), dtype=np.uint8)
+			
+			msk = np.reshape(np.asarray(img_mask_gen(out_img_path)), (224, 224, 1))
+
+			in_imgb.append(in_img)
+			out_imgb.append(out_img)
+			mskb.append(msk)
+			view_transformationb.append(view_transformation[0])
+			
 		
-		view_transformation = get_azimuth_transformation(in_img_path, out_img_path)
-
-		#TODO: figure out some way to bin these in 19 bins
-		in_img = np.asarray(Image.open(in_img_path).convert('RGB'), dtype=np.uint8)
-		out_img = np.asarray(Image.open(out_img_path).convert('RGB'), dtype=np.uint8)
-		
-		msk = np.reshape(np.asarray(img_mask_gen(out_img_path)), (224, 224, 1))
-
-
-		yield ({'image_input': np.asarray([in_img]), 'view_input': view_transformation}, 
-			{'sequential_2': np.asarray([out_img]), 'sequential_4': np.asarray([msk])})
+		yield ({'image_input': np.asarray(in_imgb), 'view_input': np.asarray(view_transformationb)}, 
+			{'sequential_2': np.asarray(out_imgb), 'sequential_4': np.asarray(mskb)})
 		
 
-def generate_data_dictionary(dataPath='../data/chairs/'):
+def generate_data_dictionary(dataPath='../data/train/'):
 	val_data_dict = {}
 	train_data_dict = {}
 
@@ -67,7 +78,7 @@ def generate_data_dictionary(dataPath='../data/chairs/'):
 	for path,dirs,files in os.walk(dataPath):
 		#print path
 		for dr in dirs:
-			print dr
+			#print dr
 			if dr!='model_views' and dr != '':
 				drPath = path+'/'+dr
 				if '//' not in drPath:
