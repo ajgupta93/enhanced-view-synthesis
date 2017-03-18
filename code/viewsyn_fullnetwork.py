@@ -97,7 +97,7 @@ def build_full_network():
 	image_encoder = build_image_encoder()
 
 	decoder = build_common_decoder()
-	decoder = output_layer_decoder(decoder, 5) #5
+	decoder = output_layer_decoder(decoder, 2) #replication
 
 	#add bilinear layer
 	decoder.add(Bilinear())
