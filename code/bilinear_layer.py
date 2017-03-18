@@ -5,7 +5,7 @@ import tensorflow as tf
 import pdb
 
 # input image I, displacement matrix dx and dy
-def binsample(I, dx, dy):
+def binsample(I, dx, dy, batch_size = 256):
 	
 	#pdb.set_trace()
 	
@@ -21,29 +21,29 @@ def binsample(I, dx, dy):
 	X = (X + dx) % 224
 	Y = (Y + dy) % 224
 	X, Y = tf.cast( X, tf.int32 ), tf.cast( Y, tf.int32 )
-	batch_size = 1
 
 	transformed_list = []
 	current_index = 0
-	# for current_index in range(batch_size):
-		# pdb.set_trace()
-	current_image = I[current_index]
-	tl = tf.slice(current_image, [0, 0, 0], [222, 222, 3])
-	tr = tf.slice(current_image, [0, 2, 0], [222, 222, 3])
-	bl = tf.slice(current_image, [2, 0, 0], [222, 222, 3])
-	br = tf.slice(current_image, [2, 2, 0], [222, 222, 3])
-	# pdb.set_trace()
-	simple_bilinear_output = (tl + tr + bl + br) / 4
-	simple_bilinear_output_with_padding = tf.pad(simple_bilinear_output,[[1, 1], [1, 1], [0, 0]])
-	# pdb.set_trace()
-	curr_idx = tf.stack([Y[current_index], X[current_index]], axis = 2)
-	transformed_idx = tf.reshape(curr_idx, [-1, 2])
-	transformed_bilinear_image = tf.gather_nd(current_image, transformed_idx)
-	img = tf.reshape(transformed_bilinear_image, [224, 224, 3])
-	transformed_list.append(img)
-
-	transformed_tensor = tf.stack(transformed_list)
 	
+	for current_index in range(batch_size):
+	
+		current_image = I[current_index]
+		tl = tf.slice(current_image, [0, 0, 0], [222, 222, 3])
+		tr = tf.slice(current_image, [0, 2, 0], [222, 222, 3])
+		bl = tf.slice(current_image, [2, 0, 0], [222, 222, 3])
+		br = tf.slice(current_image, [2, 2, 0], [222, 222, 3])
+		# pdb.set_trace()
+		simple_bilinear_output = (tl + tr + bl + br) / 4
+		simple_bilinear_output_with_padding = tf.pad(simple_bilinear_output,[[1, 1], [1, 1], [0, 0]])
+		# pdb.set_trace()
+		curr_idx = tf.stack([Y[current_index], X[current_index]], axis = 2)
+		transformed_idx = tf.reshape(curr_idx, [-1, 2])
+		transformed_bilinear_image = tf.gather_nd(current_image, transformed_idx)
+		img = tf.reshape(transformed_bilinear_image, [224, 224, 3])
+		transformed_list.append(img)
+
+		transformed_tensor = tf.stack(transformed_list)
+		
 	return transformed_tensor
 
 class Bilinear(Layer):
