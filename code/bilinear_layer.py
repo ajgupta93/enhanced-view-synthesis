@@ -41,7 +41,6 @@ def binsample(I, dx, dy, batch_size = const.batch_size):
 		transformed_list.append(img)
 
 	transformed_tensor = K.stack(transformed_list)
-	pdb.set_trace()
 		
 	return transformed_tensor
 
