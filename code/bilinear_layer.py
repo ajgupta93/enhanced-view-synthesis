@@ -18,32 +18,28 @@ def binsample(I, dx, dy, batch_size = const.batch_size):
 	x = range(224)
 	y = range(224)
 	X, Y = tf.meshgrid(x, y)
-	X, Y = tf.cast( X, tf.float32 ), tf.cast( Y, tf.float32 )
+	X, Y = K.cast( X, "float32" ), K.cast( Y, "float32" )
 	X = (X + dx) % 224
 	Y = (Y + dy) % 224
-	X, Y = tf.cast( X, tf.int32 ), tf.cast( Y, tf.int32 )
+	X, Y = K.cast( X, "int32" ), K.cast( Y, "int32" )
 
 	transformed_list = []
-	current_index = 0
-	
+	tl = tf.slice(I, [0, 0, 0, 0], [-1, 222, 222, 3])
+	tr = tf.slice(I, [0, 0, 2, 0], [-1, 222, 222, 3])
+	bl = tf.slice(I, [0, 2, 0, 0], [-1, 222, 222, 3])
+	br = tf.slice(I, [0, 2, 2, 0], [-1, 222, 222, 3])
+	stacked_images = K.stack([tl, tr, bl, br])
+	stacked_images = K.reshape(stacked_images,[-1,4,222,222,3])
+	simple_bilinear_output = K.sum(stacked_images,axis=1)/4
+	simple_bilinear_output_with_padding = K.spatial_2d_padding(simple_bilinear_output,(1, 1))
 	for current_index in range(batch_size):
-	
-		current_image = I[current_index]
-		tl = tf.slice(current_image, [0, 0, 0], [222, 222, 3])
-		tr = tf.slice(current_image, [0, 2, 0], [222, 222, 3])
-		bl = tf.slice(current_image, [2, 0, 0], [222, 222, 3])
-		br = tf.slice(current_image, [2, 2, 0], [222, 222, 3])
-		# pdb.set_trace()
-		simple_bilinear_output = (tl + tr + bl + br) / 4
-		simple_bilinear_output_with_padding = tf.pad(simple_bilinear_output,[[1, 1], [1, 1], [0, 0]])
-		# pdb.set_trace()
 		curr_idx = tf.stack([Y[current_index], X[current_index]], axis = 2)
 		transformed_idx = tf.reshape(curr_idx, [-1, 2])
-		transformed_bilinear_image = tf.gather_nd(current_image, transformed_idx)
-		img = tf.reshape(transformed_bilinear_image, [224, 224, 3])
+		transformed_bilinear_image = tf.gather_nd(simple_bilinear_output_with_padding[current_index], transformed_idx)
+		img = K.reshape(transformed_bilinear_image, [224, 224, 3])
 		transformed_list.append(img)
 
-		transformed_tensor = tf.stack(transformed_list)
+	transformed_tensor = K.stack(transformed_list)
 		
 	return transformed_tensor
 

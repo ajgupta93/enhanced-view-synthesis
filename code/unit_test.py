@@ -8,11 +8,12 @@ import utility as util
 import h5py, pdb, os
 import viewsyn_model as model
 import viewsyn_fullnetwork as fnetwork
-import random
 
 def load_test_data(current_chair_folder):
 	img = []
-
+	vpt_transformation = []
+	vpt_array = np.zeros((19))
+	cur_idx = 0
 	for filename in os.listdir(current_chair_folder):
 		if filename == ".DS_Store": continue
 		im = image.img_to_array(image.load_img((current_chair_folder + filename)))
@@ -22,27 +23,15 @@ def load_test_data(current_chair_folder):
 		for i in range(224):
 			for j in range(224):
 				dy[i][j][0] = 50
-		fp = np.concatenate((im, dx, dy), axis = 2)
-		img.append(np.asarray(fp))
-	return np.array(img)
-
-def load_test_data_replication(current_chair_folder):
-	img = []
-	view_transform = []
-
-	filename = current_chair_folder+'input.png'
-
-	for i in range(19):
-		im = image.img_to_array(image.load_img(filename))
+		im = np.concatenate((im, dx, dy), axis = 2)
 		img.append(np.asarray(im))
-		
-		vp = np.zeros(19)
-		#index = random.randint(0, 18)
-		vp[i] = 1
+		tmp = vpt_array
+		tmp[cur_idx] = 1
+		vpt_transformation += [tmp]
+		cur_idx += 1
+		cur_idx %= 19
 
-		view_transform.append(vp)
-	
-	return [np.array(img), np.array(view_transform)]
+	return np.array(img), np.array(vpt_transformation)
 
 def test_load_weights():
 	weights_path = '../model/weights.29-0.95.hdf5'
@@ -95,12 +84,12 @@ def test_bilinear_layer():
 
 	print model.summary()
 
-	current_chair_folder = "../data/chairs/eb3029393f6e60713ae92e362c52d19d/model_views/"
-	test_data = load_test_data(current_chair_folder)
+	current_chair_folder = "../data/debug_input/"
+	test_data, _ = load_test_data(current_chair_folder)
 	
 	out = model.predict(test_data)
 	pdb.set_trace()
-	util.save_as_image("../data/chairs/eb3029393f6e60713ae92e362c52d19d/", out)
+	util.save_as_image("../data/debug_output/", out)
 
 def test_full_network():
 	weights_path = '../model/weights.39-618.91.hdf5'
@@ -108,35 +97,16 @@ def test_full_network():
 	full_network = fnetwork.build_full_network()
 	full_network.load_weights(weights_path)
 
-	current_chair_folder = "../data/chairs/eb3029393f6e60713ae92e362c52d19d/model_views/"
-	test_data = load_test_data(current_chair_folder)
-	
-	out = full_network.predict(test_data)
+	current_chair_folder = "../data/debug_input/"
+	test_data, vpt_transformation = load_test_data(current_chair_folder)
+	pdb.set_trace()
+	out = full_network.predict([test_data, vpt_transformation])
+	util.save_as_image("../data/debug_output/", out[0])
 
-	util.save_as_image("../data/chairs/eb3029393f6e60713ae92e362c52d19d/test_fullNet/", out)
 
-def test_replication_network():
-	weights_path = '../model/weights.09-10.49.hdf5'
-	
-	full_network = fnetwork.build_full_network()
-	full_network.load_weights(weights_path)
 
-	current_chair_folder = "../data/chairs/eb3029393f6e60713ae92e362c52d19d/test_replication/input/"
-	test_data = load_test_data_replication(current_chair_folder)
-	
-	out = full_network.predict(test_data)
-	util.save_as_image("../data/chairs/eb3029393f6e60713ae92e362c52d19d/test_replication/", out[0])
-
-	
-	layer_name = 'sequential_3'
-	#pdb.set_trace()
-	intermediate_layer_model = Model(input=full_network.input, output=full_network.get_layer(layer_name).get_output_at(1))
-	intermediate_output = intermediate_layer_model.predict(test_data)
-	#pdb.set_trace()
-	
-	
 if __name__ == '__main__':
-	#Remember to set batch_size accordingly.
-	#test_bilinear_layer()
-	#test_load_weights()
-	test_replication_network()
+	# Remember to set batch_size accordingly.
+	test_bilinear_layer()
+	# test_load_weights()
+	# test_full_network()

@@ -161,31 +161,31 @@ def load_autoenocoder_model_weights(model, weights_path):
 	combined_network = np.concatenate((image_encoder_network, image_decoder_network))
 	
 	for layer in combined_network:
-		layer_name = layer.name
-		
-		# Not present in autoencoder layer
-		if 'bilinear_1' in layer_name: continue
-		
-		# Dimension changes for these two layers due to viewpoint transformation(dense_3) and Appearance flow(deconvolution2d_6)
-		if 'dense_3' in layer_name or 'deconvolution2d_6' in layer_name:
-
-			# Getting original set of weights from autoencoder network
-			pretrained_w = weights['model_weights'][layer_name].values()[0]
-			pretrained_b = weights['model_weights'][layer_name].values()[1]
+			layer_name = layer.name
 			
-			# Adding the padding weights due to extra channels.
-			if 'dense_3' in layer_name:
-				padding_w = layer.get_weights()[0][-256:,]
-				new_weight_matrix = [np.concatenate((pretrained_w.value, padding_w)), pretrained_b]
+			# Not present in autoencoder layer
+			if 'bilinear_1' in layer_name: continue
+			
+			# Dimension changes for these two layers due to viewpoint transformation(dense_3) and Appearance flow(deconvolution2d_6)
+			if 'dense_3' in layer_name or 'deconvolution2d_6' in layer_name:
+
+				# Getting original set of weights from autoencoder network
+				pretrained_w = weights['model_weights'][layer_name].values()[0]
+				pretrained_b = weights['model_weights'][layer_name].values()[1]
+				
+				# Adding the padding weights due to extra channels.
+				if 'dense_3' in layer_name:
+					padding_w = layer.get_weights()[0][-256:,]
+					new_weight_matrix = [np.concatenate((pretrained_w.value, padding_w)), pretrained_b]
+				else:
+					padding_w = layer.get_weights()[0][:,:,:,-2:]
+					padding_b = layer.get_weights()[1][-2:]
+					new_weight_matrix = [np.concatenate((pretrained_w.value, padding_w), axis = 3), np.concatenate((pretrained_b, padding_b))]
+
+				#Setting the new weights
+				layer.set_weights(np.array(new_weight_matrix))
+
+			# Set of weights for other layers. Dimension doesn't changes.
 			else:
-				padding_w = layer.get_weights()[0][:,:,:,-2:]
-				padding_b = layer.get_weights()[1][-2:]
-				new_weight_matrix = [np.concatenate((pretrained_w.value, padding_w), axis = 3), np.concatenate((pretrained_b, padding_b))]
-
-			#Setting the new weights
-			layer.set_weights(np.array(new_weight_matrix))
-
-		# Set of weights for other layers. Dimension doesn't changes.
-		else:
-			layer.set_weights(weights['model_weights'][layer_name].values())
+				layer.set_weights(weights['model_weights'][layer_name].values())
 
