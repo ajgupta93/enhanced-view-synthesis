@@ -2,7 +2,7 @@ from scipy.misc import imsave
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
-import Image
+from PIL import Image
 import os
 import pdb
 import shutil 
