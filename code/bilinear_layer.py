@@ -51,7 +51,9 @@ class Bilinear(Layer):
 		
 	def build(self, input_shape):
 		self.input_spec = [InputSpec(shape=input_shape)]
-
+		#self.kernel = self.add_weight(shape=(1, 1),
+		#	initializer='uniform', trainable=False)
+	
 	def call(self, x, mask=None):
 		x_unstacked = tf.unstack(x, 5, axis=3)
 		img = tf.stack(x_unstacked[0:3], axis=3)
