@@ -1,0 +1,8 @@
+*.pyc
+.DS_Store
+*.png
+*.jpg
+*.zip
+/data/*
+*.swp
+*.hdf5
