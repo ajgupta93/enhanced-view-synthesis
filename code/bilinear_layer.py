@@ -28,10 +28,9 @@ def binsample(I, dx, dy, batch_size = const.batch_size):
 	tr = tf.slice(I, [0, 0, 2, 0], [-1, 222, 222, 3])
 	bl = tf.slice(I, [0, 2, 0, 0], [-1, 222, 222, 3])
 	br = tf.slice(I, [0, 2, 2, 0], [-1, 222, 222, 3])
-	stacked_images = K.stack([tl/4, tr/4, bl/4, br/4])
+	stacked_images = K.stack([tl, tr, bl, br])
 	stacked_images = K.reshape(stacked_images,[-1,4,222,222,3])
-	simple_bilinear_output = K.sum(stacked_images,axis=1)
-	simple_bilinear_output = (tl + tr + bl + br)/4
+	simple_bilinear_output = K.sum(stacked_images,axis=1)/4
 	simple_bilinear_output_with_padding = K.spatial_2d_padding(simple_bilinear_output,(1, 1))
 	for current_index in range(batch_size):
 		curr_idx = tf.stack([Y[current_index], X[current_index]], axis = 2)
