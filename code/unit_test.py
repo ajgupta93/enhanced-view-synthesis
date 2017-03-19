@@ -1,5 +1,9 @@
 from keras.preprocessing import image
+<<<<<<< HEAD
 from keras.models import Sequential, Model
+=======
+from keras.models import Sequential
+>>>>>>> fa048e7d9d9401e49d25565a492ffad66772493b
 from keras.layers import *
 from bilinear_layer import Bilinear
 import numpy as np
