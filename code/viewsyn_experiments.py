@@ -30,7 +30,7 @@ def run_full_network(autoencoder_weights_path):
 
 
 if __name__ == '__main__':
-	autoencoder_weights_path = '../model/weights.29-62.92.hdf5'
+	autoencoder_weights_path = '../model/sb_weights/weights.29-0.95.hdf5'
 	# train_images, test_images = load_data()
 
 	#run_autoencoder(train_images, test_images)

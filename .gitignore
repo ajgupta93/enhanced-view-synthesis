@@ -4,3 +4,5 @@
 *.jpg
 *.zip
 /data/*
+*.pem
+*.hdf5

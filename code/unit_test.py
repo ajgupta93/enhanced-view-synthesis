@@ -1,5 +1,9 @@
 from keras.preprocessing import image
+<<<<<<< HEAD
+from keras.models import Sequential, Model
+=======
 from keras.models import Sequential
+>>>>>>> fa048e7d9d9401e49d25565a492ffad66772493b
 from keras.layers import *
 from bilinear_layer import Bilinear
 import numpy as np
@@ -11,7 +15,9 @@ import viewsyn_fullnetwork as fnetwork
 
 def load_test_data(current_chair_folder):
 	img = []
-
+	vpt_transformation = []
+	vpt_array = np.zeros((19))
+	cur_idx = 0
 	for filename in os.listdir(current_chair_folder):
 		if filename == ".DS_Store": continue
 		im = image.img_to_array(image.load_img((current_chair_folder + filename)))
@@ -21,9 +27,15 @@ def load_test_data(current_chair_folder):
 		for i in range(224):
 			for j in range(224):
 				dy[i][j][0] = 50
-		fp = np.concatenate((im, dx, dy), axis = 2)
-		img.append(np.asarray(fp))
-	return np.array(img)
+		im = np.concatenate((im, dx, dy), axis = 2)
+		img.append(np.asarray(im))
+		tmp = vpt_array
+		tmp[cur_idx] = 1
+		vpt_transformation += [tmp]
+		cur_idx += 1
+		cur_idx %= 19
+
+	return np.array(img), np.array(vpt_transformation)
 
 def test_load_weights():
 	weights_path = '../model/weights.29-0.95.hdf5'
@@ -76,12 +88,12 @@ def test_bilinear_layer():
 
 	print model.summary()
 
-	current_chair_folder = "../data/chairs/eb3029393f6e60713ae92e362c52d19d/model_views/"
-	test_data = load_test_data(current_chair_folder)
+	current_chair_folder = "../data/debug_input/"
+	test_data, _ = load_test_data(current_chair_folder)
 	
 	out = model.predict(test_data)
 	pdb.set_trace()
-	util.save_as_image("../data/chairs/eb3029393f6e60713ae92e362c52d19d/", out)
+	util.save_as_image("../data/debug_output/", out)
 
 def test_full_network():
 	weights_path = '../model/weights.39-618.91.hdf5'
@@ -89,16 +101,16 @@ def test_full_network():
 	full_network = fnetwork.build_full_network()
 	full_network.load_weights(weights_path)
 
-	current_chair_folder = "../data/chairs/eb3029393f6e60713ae92e362c52d19d/model_views/"
-	test_data = load_test_data(current_chair_folder)
-	
-	out = full_network.predict(test_data)
-	util.save_as_image("../data/chairs/eb3029393f6e60713ae92e362c52d19d/test_fullNet/", out)
+	current_chair_folder = "../data/debug_input/"
+	test_data, vpt_transformation = load_test_data(current_chair_folder)
+	pdb.set_trace()
+	out = full_network.predict([test_data, vpt_transformation])
+	util.save_as_image("../data/debug_output/", out[0])
 
 
 
 if __name__ == '__main__':
-	#Remember to set batch_size accordingly.
-	#test_bilinear_layer()
-	#test_load_weights()
-	test_full_network()
+	# Remember to set batch_size accordingly.
+	test_bilinear_layer()
+	# test_load_weights()
+	# test_full_network()
