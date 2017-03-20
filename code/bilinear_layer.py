@@ -6,24 +6,28 @@ import pdb
 import constants as const
 
 # Get the corresponding corner image for each pixel.
-def get_sub_image(current_image, X_indices, Y_indices):
-	current_indices = tf.stack([Y_indices, X_indices], axis = 2)
-	reshape_indices = tf.reshape(current_indices, [-1, 2])
+def get_sub_image(current_image, batch_indices, X_indices, Y_indices):
+	current_indices = tf.stack([batch_indices, Y_indices, X_indices], axis = 3)
+	reshape_indices = tf.reshape(current_indices, [-1, 3])
 	sub_image = tf.gather_nd(current_image, reshape_indices)
 
-	return K.reshape(sub_image,[224, 224, 3])
+	return K.reshape(sub_image,[-1, 224, 224, 3])
 
 def element_wise_multiply(M1, M2):
 	return K.prod(K.stack([M1, M2]), axis = 0)
 
 def stack_up(W):
 	# For 3 channels.
-	return tf.stack([W, W, W], axis = 2)
+	return tf.stack([W, W, W], axis = 3)
 
 # Input -> Image I, Matrix X and Matrix Y from which the pixel is to be extracted.
 # Output -> The final image obtained from appearance flow and bilinear sampling.
-def binsample(I, X, Y, batch_size = const.batch_size):
-	
+def binsample(I, X, Y):
+	batch_size = tf.shape(I)[0]
+	width = tf.shape(I)[1]
+	height = tf.shape(I)[2]
+	_, batch_indices, _ = tf.meshgrid(tf.range(height), tf.range(batch_size), tf.range(width))
+
 	# Get four corners for pixel (x,y)
 	floor_X = tf.floor(X)
 	floor_Y = tf.floor(Y)
@@ -70,25 +74,19 @@ def binsample(I, X, Y, batch_size = const.batch_size):
 	weighted_image_list = []
 	
 	
-	for current_index in range(batch_size):
-		current_image = padded_I[current_index]
-		# Calculate the corresponding images for the four possible corners for each pixel.
-		image_tl = get_sub_image(current_image, floor_X[current_index], floor_Y[current_index])
-		image_bl = get_sub_image(current_image, floor_X[current_index], ceil_Y[current_index])
-		image_tr = get_sub_image(current_image, ceil_X[current_index], floor_Y[current_index])
-		image_br = get_sub_image(current_image, ceil_X[current_index], ceil_Y[current_index])
+	image_tl = get_sub_image(padded_I, batch_indices, floor_X, floor_Y)
+	image_bl = get_sub_image(padded_I, batch_indices, floor_X, ceil_Y)
+	image_tr = get_sub_image(padded_I, batch_indices, ceil_X, floor_Y)
+	image_br = get_sub_image(padded_I, batch_indices, ceil_X, ceil_Y)
+	
+	# Construct the weighted image for each pixel.
+	weighted_image = element_wise_multiply(stack_up(W_tl), image_tl) +\
+					 element_wise_multiply(stack_up(W_bl), image_bl) +\
+					 element_wise_multiply(stack_up(W_tr), image_tr) +\
+					 element_wise_multiply(stack_up(W_br), image_br)
+	# pdb.set_trace()
 		
-		# Construct the weighted image for each pixel.
-		weighted_image = element_wise_multiply(stack_up(W_tl[current_index]), image_tl) +\
-						 element_wise_multiply(stack_up(W_bl[current_index]), image_bl) +\
-						 element_wise_multiply(stack_up(W_tr[current_index]), image_tr) +\
-						 element_wise_multiply(stack_up(W_br[current_index]), image_br)
-		# pdb.set_trace()
-		weighted_image_list.append(weighted_image)
-
-	output_tensor = K.stack(weighted_image_list)
-		
-	return output_tensor
+	return weighted_image
 
 class Bilinear(Layer):
 	def __init__(self, **kwargs):
