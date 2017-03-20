@@ -80,10 +80,10 @@ def binsample(I, X, Y):
 	image_br = get_sub_image(padded_I, batch_indices, ceil_X, ceil_Y)
 	
 	# Construct the weighted image for each pixel.
-	weighted_image = element_wise_multiply(stack_up(W_tl), image_tl) +\
-					 element_wise_multiply(stack_up(W_bl), image_bl) +\
-					 element_wise_multiply(stack_up(W_tr), image_tr) +\
-					 element_wise_multiply(stack_up(W_br), image_br)
+	weighted_image = K.sum(K.stack([element_wise_multiply(stack_up(W_tl), image_tl),
+					 element_wise_multiply(stack_up(W_bl), image_bl),
+					 element_wise_multiply(stack_up(W_tr), image_tr),
+					 element_wise_multiply(stack_up(W_br), image_br)]), axis = 0)
 	# pdb.set_trace()
 		
 	return weighted_image
