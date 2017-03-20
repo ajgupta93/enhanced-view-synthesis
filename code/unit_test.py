@@ -22,8 +22,8 @@ def load_test_data(current_chair_folder):
 		y = np.zeros((224, 224,1))
 		for i in range(224):
 			for j in range(224):
-				x[i][j][0] = i
-				y[i][j][0] = j
+				x[i][j][0] = i * 1.2
+				y[i][j][0] = j * 1.2
 		im = np.concatenate((im, y, x), axis = 2)
 		img.append(np.asarray(im))
 		tmp = vpt_array
