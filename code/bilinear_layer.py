@@ -5,42 +5,90 @@ import tensorflow as tf
 import pdb
 import constants as const
 
-# input image I, displacement matrix dx and dy
-def binsample(I, dx, dy, batch_size = const.batch_size):
+# Get the corresponding corner image for each pixel.
+def get_sub_image(current_image, X_indices, Y_indices):
+	current_indices = tf.stack([Y_indices, X_indices], axis = 2)
+	reshape_indices = tf.reshape(current_indices, [-1, 2])
+	sub_image = tf.gather_nd(current_image, reshape_indices)
+
+	return K.reshape(sub_image,[224, 224, 3])
+
+def element_wise_multiply(M1, M2):
+	return K.prod(K.stack([M1, M2]), axis = 0)
+
+def stack_up(W):
+	# For 3 channels.
+	return tf.stack([W, W, W], axis = 2)
+
+# Input -> Image I, Matrix X and Matrix Y from which the pixel is to be extracted.
+# Output -> The final image obtained from appearance flow and bilinear sampling.
+def binsample(I, X, Y, batch_size = const.batch_size):
 	
-	#pdb.set_trace()
+	# Get four corners for pixel (x,y)
+	floor_X = tf.floor(X)
+	floor_Y = tf.floor(Y)
+	ceil_X = floor_X + 1
+	ceil_Y = floor_Y + 1
 	
-	h = 224 #np.shape(I)[0]
-	w = 224 #np.shape(I)[1]
+	# Compute the distance of (x,y) from the corners.
+	W_X = X - floor_X
+	W_Y = Y - floor_Y
 
-	O = np.zeros((h, w, 3))
+	# Compute the individual weightage of the four corners.
+	W_tl = element_wise_multiply((1 - W_X), (1 - W_Y))
+	W_bl = element_wise_multiply((1 - W_X), W_Y)
+	W_tr = element_wise_multiply(W_X, (1 - W_Y))
+	W_br = element_wise_multiply(W_X, W_Y)
 
-	x = range(224)
-	y = range(224)
-	X, Y = tf.meshgrid(x, y)
-	X, Y = K.cast( X, "float32" ), K.cast( Y, "float32" )
-	X = (X + dx) % 224
-	Y = (Y + dy) % 224
-	X, Y = K.cast( X, "int32" ), K.cast( Y, "int32" )
+	# Padding zeros along the boundaries to ease computation.
+	padded_I = K.spatial_2d_padding(I,(1, 1))
 
-	transformed_list = []
-	tl = tf.slice(I, [0, 0, 0, 0], [-1, 222, 222, 3])
-	tr = tf.slice(I, [0, 0, 2, 0], [-1, 222, 222, 3])
-	bl = tf.slice(I, [0, 2, 0, 0], [-1, 222, 222, 3])
-	br = tf.slice(I, [0, 2, 2, 0], [-1, 222, 222, 3])
-	stacked_images = K.stack([tl, tr, bl, br])
-	simple_bilinear_output = K.sum(stacked_images,axis=0)/4
-	simple_bilinear_output_with_padding = K.spatial_2d_padding(simple_bilinear_output,(1, 1))
+	# Changing to base 1 due to padding.
+	floor_X = floor_X + 1
+	floor_Y = floor_Y + 1
+	ceil_X = ceil_X + 1
+	ceil_Y = ceil_Y + 1
+
+	# Checking boundary conditions for X-coordinate.
+	floor_X = K.maximum(floor_X, 0)
+	floor_X = K.minimum(floor_X, I.get_shape()[1].value)
+	ceil_X = K.maximum(ceil_X, 0)
+	ceil_X = K.minimum(ceil_X, I.get_shape()[1].value)
+	
+	# Checking boundary conditions for Y-coordinate.
+	floor_Y = K.maximum(floor_Y, 0)
+	floor_Y = K.minimum(floor_Y, I.get_shape()[2].value)
+	ceil_Y = K.maximum(ceil_Y, 0)
+	ceil_Y = K.minimum(ceil_Y, I.get_shape()[2].value)
+
+	# Typecasting to int32
+	floor_X = K.cast(floor_X, tf.int32)
+	floor_Y = K.cast(floor_Y, tf.int32)
+	ceil_X = K.cast(ceil_X, tf.int32)
+	ceil_Y = K.cast(ceil_Y, tf.int32)
+	
+	weighted_image_list = []
+	
+	
 	for current_index in range(batch_size):
-		curr_idx = tf.stack([Y[current_index], X[current_index]], axis = 2)
-		transformed_idx = tf.reshape(curr_idx, [-1, 2])
-		transformed_bilinear_image = tf.gather_nd(simple_bilinear_output_with_padding[current_index], transformed_idx)
-		img = K.reshape(transformed_bilinear_image, [224, 224, 3])
-		transformed_list.append(img)
-
-	transformed_tensor = K.stack(transformed_list)
+		current_image = padded_I[current_index]
+		# Calculate the corresponding images for the four possible corners for each pixel.
+		image_tl = get_sub_image(current_image, floor_X[current_index], floor_Y[current_index])
+		image_bl = get_sub_image(current_image, floor_X[current_index], ceil_Y[current_index])
+		image_tr = get_sub_image(current_image, ceil_X[current_index], floor_Y[current_index])
+		image_br = get_sub_image(current_image, ceil_X[current_index], ceil_Y[current_index])
 		
-	return transformed_tensor
+		# Construct the weighted image for each pixel.
+		weighted_image = element_wise_multiply(stack_up(W_tl[current_index]), image_tl) +\
+						 element_wise_multiply(stack_up(W_bl[current_index]), image_bl) +\
+						 element_wise_multiply(stack_up(W_tr[current_index]), image_tr) +\
+						 element_wise_multiply(stack_up(W_br[current_index]), image_br)
+		# pdb.set_trace()
+		weighted_image_list.append(weighted_image)
+
+	output_tensor = K.stack(weighted_image_list)
+		
+	return output_tensor
 
 class Bilinear(Layer):
 	def __init__(self, **kwargs):
@@ -57,10 +105,10 @@ class Bilinear(Layer):
 	def call(self, x, mask=None):
 		x_unstacked = tf.unstack(x, 5, axis=3)
 		img = tf.stack(x_unstacked[0:3], axis=3)
-		dx = x_unstacked[3]
-		dy = x_unstacked[4]
+		x = x_unstacked[3]
+		y = x_unstacked[4]
 		
-		return self.bilinear(img, dx, dy)
+		return self.bilinear(img, x, y)
 
 	def get_config(self):
 		config = {'bilinear': 'Bilinear layer'}

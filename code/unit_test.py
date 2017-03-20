@@ -18,12 +18,13 @@ def load_test_data(current_chair_folder):
 		if filename == ".DS_Store": continue
 		im = image.img_to_array(image.load_img((current_chair_folder + filename)))
 		# pdb.set_trace()
-		dx = np.zeros((224, 224,1))
-		dy = np.zeros((224, 224,1))
+		x = np.zeros((224, 224,1))
+		y = np.zeros((224, 224,1))
 		for i in range(224):
 			for j in range(224):
-				dy[i][j][0] = 50
-		im = np.concatenate((im, dx, dy), axis = 2)
+				x[i][j][0] = i
+				y[i][j][0] = j
+		im = np.concatenate((im, y, x), axis = 2)
 		img.append(np.asarray(im))
 		tmp = vpt_array
 		tmp[cur_idx] = 1
@@ -88,7 +89,7 @@ def test_bilinear_layer():
 	test_data, _ = load_test_data(current_chair_folder)
 	
 	out = model.predict(test_data)
-	pdb.set_trace()
+	# pdb.set_trace()
 	util.save_as_image("../data/debug_output/", out)
 
 def test_full_network():
