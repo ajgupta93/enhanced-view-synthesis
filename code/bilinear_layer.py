@@ -7,37 +7,32 @@ import pdb
 # input image I, displacement matrix dx and dy
 def binsample(I, dx, dy):
 	batch_size = tf.shape(I)[0]
-	# pdb.set_trace()
-	# I = tf.reshape(I,shape=[batch_size,224,224,3])
-	# dx = tf.reshape(dx,shape=[batch_size,224,224])
-	# dy = tf.reshape(dy,shape=[batch_size,224,224])
-
-	h = 224 #np.shape(I)[0]
-	w = 224 #np.shape(I)[1]
-
-	O = np.zeros((h, w, 3))
 
 	x = range(224)
 	y = range(224)
-	# z = range(batch_size)
+
 	X, Y = tf.meshgrid(x, y)
 	X, Y = tf.cast( X, tf.float32 ), tf.cast( Y, tf.float32 )
+	
 	X = (X + dx) % 224
 	Y = (Y + dy) % 224
+	
 	X, Y = tf.cast( X, tf.int32 ), tf.cast( Y, tf.int32 )
+	
 	_, Z, _ = tf.meshgrid(y, tf.range(batch_size), x)
 
 	tl = tf.slice(I, [0, 0, 0, 0], [-1, 222, 222, 3])
 	tr = tf.slice(I, [0, 0, 2, 0], [-1, 222, 222, 3])
 	bl = tf.slice(I, [0, 2, 0, 0], [-1, 222, 222, 3])
 	br = tf.slice(I, [0, 2, 2, 0], [-1, 222, 222, 3])
+	
 	simple_bilinear_output = (tl + tr + bl + br) / 4
 	simple_bilinear_output_with_padding = tf.pad(simple_bilinear_output,[[0, 0], [1, 1], [1, 1], [0, 0]])
 	
 	curr_idx = tf.stack([Z, Y, X], axis = 3)
 	
 	transformed_idx = tf.reshape(curr_idx, [-1, 3])
-	pdb.set_trace()
+	
 	transformed_bilinear_image = tf.gather_nd(I, transformed_idx)
 	img = tf.reshape(transformed_bilinear_image, [-1, 224, 224, 3])
 	
