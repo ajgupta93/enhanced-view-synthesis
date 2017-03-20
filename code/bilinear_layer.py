@@ -6,12 +6,11 @@ import pdb
 
 # input image I, displacement matrix dx and dy
 def binsample(I, dx, dy):
-	batch_size = 4
-	
-	#pdb.set_trace()
-	I = tf.reshape(I,shape=[batch_size,224,224,3])
-	dx = tf.reshape(dx,shape=[batch_size,224,224])
-	dy = tf.reshape(dy,shape=[batch_size,224,224])
+	batch_size = tf.shape(I)[0]
+	# pdb.set_trace()
+	# I = tf.reshape(I,shape=[batch_size,224,224,3])
+	# dx = tf.reshape(dx,shape=[batch_size,224,224])
+	# dy = tf.reshape(dy,shape=[batch_size,224,224])
 
 	h = 224 #np.shape(I)[0]
 	w = 224 #np.shape(I)[1]
@@ -20,13 +19,13 @@ def binsample(I, dx, dy):
 
 	x = range(224)
 	y = range(224)
-	z = range(batch_size)
+	# z = range(batch_size)
 	X, Y = tf.meshgrid(x, y)
 	X, Y = tf.cast( X, tf.float32 ), tf.cast( Y, tf.float32 )
 	X = (X + dx) % 224
 	Y = (Y + dy) % 224
 	X, Y = tf.cast( X, tf.int32 ), tf.cast( Y, tf.int32 )
-	_, Z, _ = tf.meshgrid(y, z, x)
+	_, Z, _ = tf.meshgrid(y, tf.range(batch_size), x)
 
 	tl = tf.slice(I, [0, 0, 0, 0], [-1, 222, 222, 3])
 	tr = tf.slice(I, [0, 0, 2, 0], [-1, 222, 222, 3])
