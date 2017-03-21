@@ -24,8 +24,8 @@ def stack_up(W):
 # Output -> The final image obtained from appearance flow and bilinear sampling.
 def binsample(I, X, Y):
 	batch_size = tf.shape(I)[0]
-	width = tf.shape(I)[1]
-	height = tf.shape(I)[2]
+	height = tf.shape(I)[1]
+	width = tf.shape(I)[2]
 	_, batch_indices, _ = tf.meshgrid(tf.range(height), tf.range(batch_size), tf.range(width))
 
 	# Get four corners for pixel (x,y)

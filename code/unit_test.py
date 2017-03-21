@@ -9,7 +9,7 @@ import h5py, pdb, os
 import viewsyn_model as model
 import viewsyn_fullnetwork as fnetwork
 
-def load_test_data(current_chair_folder):
+def load_test_data(current_chair_folder, for_bilinear = False):
 	img = []
 	vpt_transformation = []
 	vpt_array = np.zeros((19))
@@ -17,14 +17,16 @@ def load_test_data(current_chair_folder):
 	for filename in os.listdir(current_chair_folder):
 		if filename == ".DS_Store": continue
 		im = image.img_to_array(image.load_img((current_chair_folder + filename)))
-		# pdb.set_trace()
-		x = np.zeros((224, 224,1))
-		y = np.zeros((224, 224,1))
-		for i in range(224):
-			for j in range(224):
-				x[i][j][0] = i * 1.2
-				y[i][j][0] = j * 1.2
-		im = np.concatenate((im, y, x), axis = 2)
+
+		if for_bilinear:
+			x = np.zeros((224, 224,1))
+			y = np.zeros((224, 224,1))
+			for i in range(224):
+				for j in range(224):
+					x[i][j][0] = i * 1.2
+					y[i][j][0] = j * 1.2
+			im = np.concatenate((im, y, x), axis = 2)
+		
 		img.append(np.asarray(im))
 		tmp = vpt_array
 		tmp[cur_idx] = 1
@@ -79,21 +81,30 @@ def test_load_weights():
 			print "Exception for layer:", layer_full_n[i]
 			pdb.set_trace()
 
-def test_bilinear_layer():
-	model = Sequential()
-	model.add(Bilinear(input_shape=(224, 224, 5)))
-
-	print model.summary()
+def test_bilinear_layer(standalone_test = False):
 
 	current_chair_folder = "../data/debug_input/"
-	test_data, _ = load_test_data(current_chair_folder)
+	test_data, _ = load_test_data(current_chair_folder, standalone_test)
+	if standalone_test == False:
+		# Remember to uncomment return statement from test_intermediate_output()
+		xy_array = test_intermediate_output(test_data)
+
+	model = Sequential()
+	model.add(Bilinear(input_shape=(224, 224, 5)))
+	print model.summary()
+
 	
-	out = model.predict(test_data)
-	# pdb.set_trace()
+	if standalone_test == False:
+		inp = np.concatenate((test_data, xy_array), axis = 3)
+	else:
+		inp = test_data
+	
+	out = model.predict(inp)
+	
 	util.save_as_image("../data/debug_output/", out)
 
 def test_full_network():
-	weights_path = '../model/weights.39-618.91.hdf5'
+	weights_path = '../model/weights.04-11.95.hdf5'
 	
 	full_network = fnetwork.build_full_network()
 	full_network.load_weights(weights_path)
@@ -104,10 +115,33 @@ def test_full_network():
 	out = full_network.predict([test_data, vpt_transformation])
 	util.save_as_image("../data/debug_output/", out[0])
 
+def test_intermediate_output(test_data = None, vpt_transformation = None):
+	layer_name = "bilinear_1"
+	weights_path = '../model/weights.04-11.95.hdf5'
+	
+	full_network = fnetwork.build_full_network()
+	full_network.load_weights(weights_path)
+
+	current_chair_folder = "../data/debug_input/"
+	if test_data == None or vpt_transformation == None:
+		test_data, vpt_transformation = load_test_data(current_chair_folder)
+	
+	# pdb.set_trace()
+	intermediate_layer_model = Model(input=full_network.input, output=full_network.get_layer(layer_name).output)
+	# pdb.set_trace()
+	out = intermediate_layer_model.predict([test_data, vpt_transformation])
+	# pdb.set_trace()
+	# output of appearance flow for merge_2 layer.
+	# out = out[:, :, :, -2:]
+	util.save_as_image("../data/debug_output/", out)
+	# return out
+	
+
 
 
 if __name__ == '__main__':
 	# Remember to set batch_size accordingly.
-	test_bilinear_layer()
+	# test_bilinear_layer()
 	# test_load_weights()
-	# test_full_network()
+	test_full_network()
+	# test_intermediate_output()
