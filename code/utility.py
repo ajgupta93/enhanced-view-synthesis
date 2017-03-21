@@ -57,6 +57,13 @@ def generate_data_from_list(data_dict, batch_size = const.batch_size):
 
 			in_img = np.asarray(Image.open(in_img_path).convert('RGB'), dtype=np.uint8)
 			out_img = np.asarray(Image.open(out_img_path).convert('RGB'), dtype=np.uint8)
+			m1 = 104 * np.ones((224, 224))
+			m2 = 117 * np.ones((224, 224))
+			m3 = 123 * np.ones((224, 224))
+			mall = np.concatenate((m1[:,:,None], m2[:,:,None], m3[:,:,None]), axis=2)
+			in_img = in_img - mall
+			out_img = out_img - mall
+			
 			
 			msk = np.reshape(np.asarray(img_mask_gen(out_img_path)), (224, 224, 1))
 
